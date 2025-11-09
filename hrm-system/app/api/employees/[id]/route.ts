@@ -1,0 +1,122 @@
+import { NextRequest, NextResponse } from "next/server";
+import { query } from "@/lib/db";
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    const result = await query("SELECT * FROM users WHERE id = $1", [id]);
+
+    if (result.rows.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "User not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error: unknown) {
+    console.error("Error fetching user:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to fetch user";
+    return NextResponse.json(
+      {
+        success: false,
+        error: errorMessage,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT запрос - обновление пользователя
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { name, email } = body;
+
+    const result = await query(
+      "UPDATE users SET name = $1, email = $2, updated_at = NOW() WHERE id = $3 RETURNING *",
+      [name, email, id]
+    );
+
+    if (result.rows.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "User not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error: unknown) {
+    console.error("Error updating user:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to update user";
+    return NextResponse.json(
+      {
+        success: false,
+        error: errorMessage,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE запрос - удаление пользователя
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    const result = await query("DELETE FROM users WHERE id = $1 RETURNING *", [
+      id,
+    ]);
+
+    if (result.rows.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "User not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (error: unknown) {
+    console.error("Error deleting user:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to delete user";
+    return NextResponse.json(
+      {
+        success: false,
+        error: errorMessage,
+      },
+      { status: 500 }
+    );
+  }
+}
