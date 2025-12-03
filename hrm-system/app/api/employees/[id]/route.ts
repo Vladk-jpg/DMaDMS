@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { EmployeeService } from "@/lib/services/employee-service";
 
 export async function GET(
   request: NextRequest,
@@ -7,14 +8,13 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const result = await EmployeeService.getEmployeeWithProfileById(id);
 
-    const result = await query("SELECT * FROM users WHERE id = $1", [id]);
-
-    if (result.rows.length === 0) {
+    if (result === null) {
       return NextResponse.json(
         {
           success: false,
-          error: "User not found",
+          error: "Employee not found",
         },
         { status: 404 }
       );
@@ -22,12 +22,12 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      data: result.rows[0],
+      data: result,
     });
   } catch (error: unknown) {
-    console.error("Error fetching user:", error);
+    console.error("[Route] Error fetching employee:", error);
     const errorMessage =
-      error instanceof Error ? error.message : "Failed to fetch user";
+      error instanceof Error ? error.message : "Failed to fetch employee";
     return NextResponse.json(
       {
         success: false,
@@ -38,7 +38,6 @@ export async function GET(
   }
 }
 
-// PUT запрос - обновление пользователя
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -46,18 +45,18 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, email } = body;
+    const { email, phone } = body;
 
     const result = await query(
-      "UPDATE users SET name = $1, email = $2, updated_at = NOW() WHERE id = $3 RETURNING *",
-      [name, email, id]
+      "UPDATE employees SET email = $1, phone = $2, updated_at = NOW() WHERE id = $3 RETURNING *",
+      [email, phone, id]
     );
 
     if (result.rows.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          error: "User not found",
+          error: "Employee not found",
         },
         { status: 404 }
       );
@@ -68,9 +67,9 @@ export async function PUT(
       data: result.rows[0],
     });
   } catch (error: unknown) {
-    console.error("Error updating user:", error);
+    console.error("Error updating employee:", error);
     const errorMessage =
-      error instanceof Error ? error.message : "Failed to update user";
+      error instanceof Error ? error.message : "Failed to update employee";
     return NextResponse.json(
       {
         success: false,
@@ -81,7 +80,7 @@ export async function PUT(
   }
 }
 
-// DELETE запрос - удаление пользователя
+// DELETE запрос - удаление сотрудника
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -89,15 +88,16 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const result = await query("DELETE FROM users WHERE id = $1 RETURNING *", [
-      id,
-    ]);
+    const result = await query(
+      "DELETE FROM employees WHERE id = $1 RETURNING *",
+      [id]
+    );
 
     if (result.rows.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          error: "User not found",
+          error: "Employee not found",
         },
         { status: 404 }
       );
@@ -105,12 +105,12 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: "User deleted successfully",
+      message: "Employee deleted successfully",
     });
   } catch (error: unknown) {
-    console.error("Error deleting user:", error);
+    console.error("Error deleting employee:", error);
     const errorMessage =
-      error instanceof Error ? error.message : "Failed to delete user";
+      error instanceof Error ? error.message : "Failed to delete employee";
     return NextResponse.json(
       {
         success: false,
