@@ -17,7 +17,7 @@ export default function Sidebar() {
 
   const menuItems = [
     { href: "/organisation", label: "Organization", icon: FiBriefcase },
-    { href: "/profile", label: "Personal", icon: FiUser },
+    { href: "/employees", label: "Personal", icon: FiUser },
     { href: "/departments", label: "Departments", icon: FiLayers },
     { href: "/timesheet", label: "Timesheets", icon: FiClock },
     { href: "/leaves", label: "Leaves", icon: FiCalendar },

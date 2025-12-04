@@ -1,7 +1,7 @@
 import { NextAuthOptions, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { verifyPassword } from "./auth";
-import pool from "./db";
+import { query } from "./db";
 import { Employee } from "@/models/employee";
 import { Role } from "@/models/role";
 
@@ -19,8 +19,11 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          const employeeResult = await pool.query(
-            "SELECT * FROM employees WHERE email = $1",
+          const employeeResult = await query(
+            /* sql */`
+            SELECT * 
+            FROM employees 
+            WHERE email = $1;`,
             [credentials.email]
           );
 
@@ -39,8 +42,9 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          const roleResult = await pool.query(
-            "SELECT * FROM roles WHERE id = $1",
+          const roleResult = await query(
+            /* sql */`
+            SELECT * FROM roles WHERE id = $1`,
             [employee.user_role_id]
           );
 
@@ -50,8 +54,11 @@ export const authOptions: NextAuthOptions = {
 
           const role = roleResult.rows[0] as Role;
 
-          const profileResult = await pool.query(
-            "SELECT first_name, second_name, middle_name FROM employee_profiles WHERE employee_id = $1",
+          const profileResult = await query(
+            /* sql */`
+            SELECT first_name, second_name, middle_name 
+            FROM employee_profiles 
+            WHERE employee_id = $1`,
             [employee.id]
           );
 

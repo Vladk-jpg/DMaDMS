@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { CreateEmployeeDto } from "@/lib/services/dto";
+import { DepartmentService } from "@/lib/services/department-service";
 import { handlePgError } from "@/lib/utils/pg-error-handler";
-import { EmployeeService } from "@/lib/services/employee-service";
+import { CreateDepartmentDto } from "@/lib/services/dto";
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
 
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const search = searchParams.get('search') || undefined;
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
 
     const [result, total] = await Promise.all([
-      EmployeeService.getPartialEmployees(page, limit, search),
-      EmployeeService.getEmployeesCount(search),
+      DepartmentService.getPartialDepartments(page, limit),
+      DepartmentService.getDepartmentsCount(),
     ]);
 
     return NextResponse.json({
@@ -23,25 +22,25 @@ export async function GET(request: NextRequest) {
       total,
     });
   } catch (error: unknown) {
-    return handlePgError(error, "fetch employees");
+    return handlePgError(error, "fetch departments");
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const dto: CreateEmployeeDto = body;
+    const dto: CreateDepartmentDto = body;
 
-    await EmployeeService.createEmployeeWithProfile(dto);
+    await DepartmentService.createDepartment(dto);
 
     return NextResponse.json(
       {
         success: true,
-        message: "Employee created successfully",
+        message: "Department created successfully",
       },
       { status: 201 }
     );
   } catch (error: unknown) {
-    return handlePgError(error, "create employee");
+    return handlePgError(error, "create department");
   }
 }

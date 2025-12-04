@@ -1,5 +1,237 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Button from "@/lib/components/Button";
+
+interface Department {
+  id: string;
+  name: string;
+  description?: string | null;
+  head_id?: string | null;
+  head_name?: string | null;
+}
+
+interface ApiResponse {
+  success: boolean;
+  data?: Department[];
+  count?: number;
+  total?: number;
+  error?: string;
+}
+
 export default function DepartmentsPage() {
-  return <div>Departments</div>;
+  const router = useRouter();
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    async function fetchDepartments() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch(
+          `/api/departments?page=${currentPage}&limit=${itemsPerPage}`
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Server returned non-JSON response");
+        }
+
+        const data: ApiResponse = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || "Failed to fetch departments");
+        }
+
+        setDepartments(data.data || []);
+        setTotalPages(Math.ceil((data.total || 0) / itemsPerPage));
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to fetch departments";
+        setError(errorMessage);
+        console.error("Error fetching departments:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchDepartments();
+  }, [currentPage]);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
+    }
+  };
+
+  const handlePageClick = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push(-1);
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push(-1);
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push(-2);
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
+  };
+
+  return (
+    <div className="container mx-auto p-8">
+      <h1 className="text-3xl font-bold mb-6">Departments</h1>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-gray-600">Loading...</div>
+        </div>
+      ) : error ? (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p>Error: {error}</p>
+          <p className="text-sm mt-2">
+            Make sure your database is running and the connection settings are
+            correct.
+          </p>
+        </div>
+      ) : (
+        <>
+          {departments.length === 0 ? (
+            <p className="text-gray-600">No departments found.</p>
+          ) : (
+            <>
+              <div className="mb-4 flex justify-start">
+                <Button
+                  variant="primary"
+                  onClick={() => router.push("/hr/departments/new")}
+                >
+                  Create new
+                </Button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Department Head
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {departments.map((department) => (
+                      <tr key={department.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                          {department.name}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {department.description || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {department.head_id && department.head_name ? (
+                            <a
+                              href={`/employees/${department.head_id}`}
+                              className="text-primary hover:underline cursor-pointer"
+                            >
+                              {department.head_name}
+                            </a>
+                          ) : (
+                            <span className="text-gray-400">No head assigned</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-6">
+                  <Button
+                    variant="outline"
+                    onClick={handlePrevPage}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2"
+                  >
+                    &lt;
+                  </Button>
+                  {getPageNumbers().map((page, index) =>
+                    page < 0 ? (
+                      <span key={`ellipsis-${index}`} className="px-2 text-gray-500">
+                        ...
+                      </span>
+                    ) : (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "primary" : "outline"}
+                        onClick={() => handlePageClick(page)}
+                        className="px-3 py-2 min-w-10"
+                      >
+                        {page}
+                      </Button>
+                    )
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2"
+                  >
+                    &gt;
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
 }

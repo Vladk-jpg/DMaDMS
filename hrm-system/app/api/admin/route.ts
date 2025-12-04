@@ -9,11 +9,10 @@ export async function GET(request: NextRequest) {
 
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
-    const search = searchParams.get('search') || undefined;
 
     const [result, total] = await Promise.all([
-      EmployeeService.getPartialEmployees(page, limit, search),
-      EmployeeService.getEmployeesCount(search),
+      EmployeeService.getPartialAdministration(page, limit),
+      EmployeeService.getAdministrationCount(),
     ]);
 
     return NextResponse.json({
@@ -23,25 +22,29 @@ export async function GET(request: NextRequest) {
       total,
     });
   } catch (error: unknown) {
-    return handlePgError(error, "fetch employees");
+    return handlePgError(error, "fetch administration");
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const dto: CreateEmployeeDto = body;
+    const dto: CreateEmployeeDto = {
+      ...body,
+      birthDate: new Date(body.birthDate),
+      hireDate: new Date(body.hireDate),
+    };
 
     await EmployeeService.createEmployeeWithProfile(dto);
 
     return NextResponse.json(
       {
         success: true,
-        message: "Employee created successfully",
+        message: "Admin created successfully",
       },
       { status: 201 }
     );
   } catch (error: unknown) {
-    return handlePgError(error, "create employee");
+    return handlePgError(error, "create admin");
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
 import { EmployeeService } from "@/lib/services/employee-service";
+import { handlePgError } from "@/lib/utils/pg-error-handler";
+import { CreateEmployeeDto } from "@/lib/services/dto";
 
 export async function GET(
   request: NextRequest,
@@ -25,62 +26,29 @@ export async function GET(
       data: result,
     });
   } catch (error: unknown) {
-    console.error("[Route] Error fetching employee:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Failed to fetch employee";
-    return NextResponse.json(
-      {
-        success: false,
-        error: errorMessage,
-      },
-      { status: 500 }
-    );
+    return handlePgError(error, "fetch employee");
   }
 }
 
-export async function PUT(
+export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const body = await request.json();
-    const { email, phone } = body;
+    const dto: CreateEmployeeDto = await request.json();
 
-    const result = await query(
-      "UPDATE employees SET email = $1, phone = $2, updated_at = NOW() WHERE id = $3 RETURNING *",
-      [email, phone, id]
-    );
-
-    if (result.rows.length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Employee not found",
-        },
-        { status: 404 }
-      );
-    }
+    EmployeeService.updateEmployeeWithProfile(id, dto);
 
     return NextResponse.json({
       success: true,
-      data: result.rows[0],
+      message: "Employee updated successfully",
     });
   } catch (error: unknown) {
-    console.error("Error updating employee:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Failed to update employee";
-    return NextResponse.json(
-      {
-        success: false,
-        error: errorMessage,
-      },
-      { status: 500 }
-    );
+    return handlePgError(error, "update employee");
   }
 }
 
-// DELETE запрос - удаление сотрудника
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -88,35 +56,13 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const result = await query(
-      "DELETE FROM employees WHERE id = $1 RETURNING *",
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Employee not found",
-        },
-        { status: 404 }
-      );
-    }
+    EmployeeService.deleteEmployee(id);
 
     return NextResponse.json({
       success: true,
       message: "Employee deleted successfully",
     });
   } catch (error: unknown) {
-    console.error("Error deleting employee:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Failed to delete employee";
-    return NextResponse.json(
-      {
-        success: false,
-        error: errorMessage,
-      },
-      { status: 500 }
-    );
+    return handlePgError(error, "delete employee");
   }
 }
