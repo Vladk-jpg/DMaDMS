@@ -13,6 +13,7 @@ WHERE r.name <> 'Admin'
        ep.first_name ILIKE '%' || $3 || '%' OR
        ep.second_name ILIKE '%' || $3 || '%' OR
        e.email ILIKE '%' || $3 || '%')
+  AND e.status::text <> 'fired'
 ORDER BY
   r.name ASC, ep.first_name ASC
 LIMIT $1

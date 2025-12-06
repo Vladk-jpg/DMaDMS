@@ -54,6 +54,8 @@ export class EmployeeService {
   static async createEmployeeWithProfile(
     dto: CreateEmployeeDto
   ): Promise<void> {
+    const hashedPassword = await hashPassword(dto.password);
+
     await query(
       /* sql */ `
       CALL create_full_employee($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);
@@ -61,7 +63,7 @@ export class EmployeeService {
       [
         dto.email,
         dto.phone,
-        hashPassword(dto.password),
+        hashedPassword,
         dto.departmentId,
         dto.userRoleId,
         dto.positionId,
@@ -82,7 +84,7 @@ export class EmployeeService {
     dto: Partial<CreateEmployeeDto>
   ): Promise<void> {
     const hashedPassword = dto.password
-      ? hashPassword(dto.password)
+      ? await hashPassword(dto.password)
       : undefined;
 
     const birthDate = dto.birthDate
@@ -95,7 +97,7 @@ export class EmployeeService {
 
     await query(
       /* sql */ `
-      CALL update_full_employee($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);`,
+      CALL update_full_employee($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16);`,
       [
         id,
         dto.email,
@@ -103,6 +105,7 @@ export class EmployeeService {
         hashedPassword,
         dto.departmentId,
         dto.userRoleId,
+        dto.status,
         dto.positionId,
         dto.passportNumber,
         dto.firstName,

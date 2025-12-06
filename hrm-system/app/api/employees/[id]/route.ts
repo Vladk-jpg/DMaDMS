@@ -36,7 +36,12 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const dto: CreateEmployeeDto = await request.json();
+    const body = await request.json();
+    const dto: CreateEmployeeDto = {
+      ...body,
+      birthDate: body.birthDate ? new Date(body.birthDate) : undefined,
+      hireDate: body.hireDate ? new Date(body.hireDate) : undefined,
+    };
 
     EmployeeService.updateEmployeeWithProfile(id, dto);
 

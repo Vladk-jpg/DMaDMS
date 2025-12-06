@@ -5,6 +5,10 @@ export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
 
+    if (!token) {
+      return NextResponse.redirect(new URL("/auth/login", req.url));
+    }
+
     if (req.nextUrl.pathname.startsWith("/admin")) {
       if (token?.role !== "Admin") {
         return NextResponse.redirect(new URL("/unauthorized", req.url));
@@ -26,6 +30,11 @@ export default withAuth(
       }
     }
     if (req.nextUrl.pathname.startsWith("/salaries/employee")) {
+      if (token?.role !== "HR" && token?.role !== "Admin") {
+        return NextResponse.redirect(new URL("/unauthorized", req.url));
+      }
+    }
+    if (req.nextUrl.pathname.startsWith("/employees/new")) {
       if (token?.role !== "HR" && token?.role !== "Admin") {
         return NextResponse.redirect(new URL("/unauthorized", req.url));
       }

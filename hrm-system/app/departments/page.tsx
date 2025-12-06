@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Button from "@/lib/components/Button";
+import Modal from "@/lib/components/Modal";
 
 interface Department {
   id: string;
@@ -18,15 +20,22 @@ interface ApiResponse {
   count?: number;
   total?: number;
   error?: string;
+  message?: string;
 }
 
 export default function DepartmentsPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [departmentToDelete, setDepartmentToDelete] =
+    useState<Department | null>(null);
+  const [deleting, setDeleting] = useState<boolean>(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -120,9 +129,77 @@ export default function DepartmentsPage() {
     return pages;
   };
 
+  const canDeleteDepartment = () => {
+    const role = session?.user?.role;
+    return role === "HR" || role === "Admin";
+  };
+
+  const handleDeleteClick = (department: Department) => {
+    setDepartmentToDelete(department);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!departmentToDelete) return;
+
+    try {
+      setDeleting(true);
+      setError(null);
+
+      const response = await fetch(`/api/departments/${departmentToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      const data: ApiResponse = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to delete department");
+      }
+
+      setSuccess("Department deleted successfully!");
+      setTimeout(() => setSuccess(null), 3000);
+
+      // Refresh departments list
+      const newResponse = await fetch(
+        `/api/departments?page=${currentPage}&limit=${itemsPerPage}`
+      );
+      const newData: ApiResponse = await newResponse.json();
+
+      if (newData.success && newData.data) {
+        setDepartments(newData.data);
+        setTotalPages(Math.ceil((newData.total || 0) / itemsPerPage));
+
+        // If current page is empty and not the first page, go to previous page
+        if (newData.data.length === 0 && currentPage > 1) {
+          setCurrentPage((prev) => prev - 1);
+        }
+      }
+
+      setShowDeleteModal(false);
+      setDepartmentToDelete(null);
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete department";
+      setError(errorMessage);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setDepartmentToDelete(null);
+  };
+
   return (
     <div className="container mx-auto p-8">
       <h1 className="text-3xl font-bold mb-6">Departments</h1>
+
+      {success && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          <p>{success}</p>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
@@ -163,6 +240,11 @@ export default function DepartmentsPage() {
                       <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Department Head
                       </th>
+                      {canDeleteDepartment() && (
+                        <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -186,6 +268,17 @@ export default function DepartmentsPage() {
                             <span className="text-gray-400">No head assigned</span>
                           )}
                         </td>
+                        {canDeleteDepartment() && (
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <Button
+                              variant="danger"
+                              onClick={() => handleDeleteClick(department)}
+                              className="px-3 py-1 text-xs"
+                            >
+                              Delete
+                            </Button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -232,6 +325,49 @@ export default function DepartmentsPage() {
           )}
         </>
       )}
+
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={handleDeleteCancel}
+        title="Delete Department"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700">
+            Are you sure you want to delete this department? This action cannot
+            be undone.
+          </p>
+          {departmentToDelete && (
+            <div className="bg-gray-50 p-3 rounded">
+              <p className="text-gray-900 font-semibold">
+                Department: {departmentToDelete.name}
+              </p>
+              {departmentToDelete.description && (
+                <p className="text-sm text-gray-600 mt-1">
+                  {departmentToDelete.description}
+                </p>
+              )}
+            </div>
+          )}
+          <div className="flex gap-2 pt-4">
+            <Button
+              variant="danger"
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="flex-1"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleDeleteCancel}
+              disabled={deleting}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

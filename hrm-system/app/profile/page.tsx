@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import InfoField from "@/lib/components/InfoField";
 import Button from "@/lib/components/Button";
 import CircleImage from "@/lib/components/CircleImage";
@@ -14,6 +15,7 @@ interface ApiResponse {
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<EmployeeWithProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,7 +149,17 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto p-8">
-      <h1 className="text-3xl font-bold mb-6">My Profile</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">My Profile</h1>
+        {profile?.role?.toLowerCase() === "admin" && (
+          <Button
+            variant="primary"
+            onClick={() => router.push("/admin/logs")}
+          >
+            View Audit Logs
+          </Button>
+        )}
+      </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-12">

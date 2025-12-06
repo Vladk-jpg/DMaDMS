@@ -30,7 +30,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const dto: CreateEmployeeDto = body;
+    const dto: CreateEmployeeDto = {
+      ...body,
+      birthDate: new Date(body.birthDate),
+      hireDate: new Date(body.hireDate),
+    };
 
     await EmployeeService.createEmployeeWithProfile(dto);
 

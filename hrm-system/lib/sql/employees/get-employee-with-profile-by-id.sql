@@ -3,7 +3,7 @@ SELECT
   e.email,
   e.phone,
   e.status,
-  ep.first_name || ' ' || ep.second_name || COALESCE(' ' || ep.middle_name, '') AS fullName,
+  ep.first_name || ' ' || ep.second_name AS fullName,
   ep.first_name,
   ep.second_name,
   ep.middle_name,

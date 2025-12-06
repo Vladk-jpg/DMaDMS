@@ -6,5 +6,6 @@ WHERE r.name <> 'Admin'
   AND ($1::text IS NULL OR
        ep.first_name ILIKE '%' || $1 || '%' OR
        ep.second_name ILIKE '%' || $1 || '%' OR
-       e.email ILIKE '%' || $1 || '%');
+       e.email ILIKE '%' || $1 || '%')
+  AND e.status::text <> 'fired';
 

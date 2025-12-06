@@ -9,6 +9,7 @@ import Modal from "@/lib/components/Modal";
 import { EmployeeWithProfile } from "@/app/types/employee-with-profile";
 import { Salary } from "@/app/types/salary";
 import { PerformanceReview } from "@/app/types/performance-review";
+import { EmployeeStatus } from "@/models/enums";
 
 interface ApiResponse<T> {
   success: boolean;
@@ -58,6 +59,8 @@ export default function HREmployeePage() {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isEditingSalary, setIsEditingSalary] = useState<boolean>(false);
   const [uploadLoading, setUploadLoading] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
 
   const [employeeForm, setEmployeeForm] = useState({
     email: "",
@@ -73,6 +76,7 @@ export default function HREmployeePage() {
     middle_name: "",
     birth_date: "",
     hire_date: "",
+    status: "",
   });
 
   const [salaryForm, setSalaryForm] = useState({
@@ -135,6 +139,7 @@ export default function HREmployeePage() {
           hire_date: emp.hiredate
             ? new Date(emp.hiredate).toISOString().split("T")[0]
             : "",
+          status: emp.status || "",
         });
 
         if (salaryRes.ok) {
@@ -322,6 +327,7 @@ export default function HREmployeePage() {
           middleName: employeeForm.middle_name,
           birthDate: new Date(employeeForm.birth_date),
           hireDate: new Date(employeeForm.hire_date),
+          status: employeeForm.status,
         }),
       });
 
@@ -439,13 +445,44 @@ export default function HREmployeePage() {
     }
   };
 
+  const handleDeleteEmployee = async () => {
+    try {
+      setIsDeleting(true);
+      setError(null);
+
+      const response = await fetch(`/api/employees/${employeeId}`, {
+        method: "DELETE",
+      });
+
+      const data: ApiResponse<unknown> = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to delete employee");
+      }
+
+      router.push("/employees");
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete employee";
+      setError(errorMessage);
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Employee Details</h1>
-        <Button variant="outline" onClick={() => router.push("/employees")}>
-          Back to Employees
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="danger" onClick={() => setShowDeleteConfirm(true)}>
+            Delete Employee
+          </Button>
+          <Button variant="outline" onClick={() => router.push("/employees")}>
+            Back to Employees
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -641,6 +678,29 @@ export default function HREmployeePage() {
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={employeeForm.status}
+                    onChange={(e) =>
+                      setEmployeeForm({
+                        ...employeeForm,
+                        status: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="">Select Status</option>
+                    {Object.values(EmployeeStatus).map((status) => (
+                      <option key={status} value={status}>
+                        {getStatusLabel(status)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -937,6 +997,41 @@ export default function HREmployeePage() {
             <Button
               variant="outline"
               onClick={() => setIsEditingSalary(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="Delete Employee"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700">
+            Are you sure you want to delete this employee? This action cannot be undone.
+          </p>
+          {employee && (
+            <p className="text-gray-900 font-semibold">
+              Employee: {employee.fullname}
+            </p>
+          )}
+          <div className="flex gap-2 pt-4">
+            <Button
+              variant="danger"
+              onClick={handleDeleteEmployee}
+              disabled={isDeleting}
+              className="flex-1"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(false)}
+              disabled={isDeleting}
               className="flex-1"
             >
               Cancel

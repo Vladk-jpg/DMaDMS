@@ -1,31 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Button from "@/lib/components/Button";
-import CircleImage from "@/lib/components/CircleImage";
-import Dropdown, { DropdownItem } from "@/lib/components/Dropdown";
-import Link from "next/link";
-
-interface Employee {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  picture: string;
-}
+import { AuditLog } from "@/app/types/audit-log";
 
 interface ApiResponse {
   success: boolean;
-  data?: Employee[];
+  data?: AuditLog[];
   count?: number;
   total?: number;
   error?: string;
 }
 
-export default function EmployeesPage() {
-  const router = useRouter();
-  const [employees, setEmployees] = useState<Employee[]>([]);
+export default function AuditLogsPage() {
+  const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -33,13 +21,13 @@ export default function EmployeesPage() {
   const itemsPerPage = 10;
 
   useEffect(() => {
-    async function fetchEmployees() {
+    async function fetchLogs() {
       try {
         setLoading(true);
         setError(null);
 
         const response = await fetch(
-          `/api/employees?page=${currentPage}&limit=${itemsPerPage}`
+          `/api/audit-logs?page=${currentPage}&limit=${itemsPerPage}`
         );
 
         if (!response.ok) {
@@ -54,22 +42,22 @@ export default function EmployeesPage() {
         const data: ApiResponse = await response.json();
 
         if (!data.success) {
-          throw new Error(data.error || "Failed to fetch employees");
+          throw new Error(data.error || "Failed to fetch audit logs");
         }
 
-        setEmployees(data.data || []);
+        setLogs(data.data || []);
         setTotalPages(Math.ceil((data.total || 0) / itemsPerPage));
       } catch (err: unknown) {
         const errorMessage =
-          err instanceof Error ? err.message : "Failed to fetch employees";
+          err instanceof Error ? err.message : "Failed to fetch audit logs";
         setError(errorMessage);
-        console.error("Error fetching employees:", err);
+        console.error("Error fetching audit logs:", err);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchEmployees();
+    fetchLogs();
   }, [currentPage]);
 
   const handleNextPage = () => {
@@ -123,24 +111,26 @@ export default function EmployeesPage() {
     return pages;
   };
 
-  const handleEditEmployee = (id: string) => {
-    router.push(`/hr/employees/${id}`);
+  const formatDate = (date: Date | string) => {
+    return new Date(date).toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
-  const handleReviewEmployee = (id: string) => {
-    router.push(`/manager/review/${id}`);
-  };
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="w-full">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Employees</h1>
-        <Button
-          variant="primary"
-          onClick={() => router.push("/employees/new")}
-        >
-          Add Employee
-        </Button>
+        <h1 className="text-3xl font-bold">Audit Logs</h1>
+        {!loading && !error && (
+          <span className="text-sm text-gray-600">
+            Page {currentPage} of {totalPages} • Total: {logs.length} on this page
+          </span>
+        )}
       </div>
 
       {loading ? (
@@ -157,8 +147,8 @@ export default function EmployeesPage() {
         </div>
       ) : (
         <>
-          {employees.length === 0 ? (
-            <p className="text-gray-600">No employees found.</p>
+          {logs.length === 0 ? (
+            <p className="text-gray-600">No audit logs found.</p>
           ) : (
             <>
               <div className="overflow-x-auto">
@@ -166,67 +156,45 @@ export default function EmployeesPage() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Photo
+                        Action
                       </th>
                       <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
+                        Entity
                       </th>
                       <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Role
+                        Entity ID
                       </th>
                       <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
+                        Date
                       </th>
                       <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        Details
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {employees.map((employee) => (
-                      <tr key={employee.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <CircleImage
-                            src={employee.picture || "/noimage.jpg"}
-                            alt={employee.name}
-                            size={48}
-                          />
+                    {logs.map((log, index) => (
+                      <tr key={index}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {log.action}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <Link
-                            href={`/employees/${employee.id}`}
-                            className="text-blue-600 hover:text-blue-800 hover:underline"
-                          >
-                            {employee.name}
-                          </Link>
+                          {log.entity_name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {log.entity_id}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {employee.role}
+                          {formatDate(log.created_at)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {employee.email}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 relative">
-                          <div className="flex justify-center">
-                            <Dropdown
-                              trigger={
-                                <button className="text-gray-500 hover:text-gray-700 text-xl cursor-pointer">
-                                  ⋯
-                                </button>
-                              }
-                            >
-                              <DropdownItem
-                                onClick={() => handleEditEmployee(employee.id)}
-                              >
-                                Edit
-                              </DropdownItem>
-                              <DropdownItem
-                                onClick={() => handleReviewEmployee(employee.id)}
-                              >
-                                Review
-                              </DropdownItem>
-                            </Dropdown>
-                          </div>
+                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
+                          <pre className="whitespace-pre-wrap wrap-break-word font-mono text-xs">
+                            {typeof log.details === 'string'
+                              ? log.details
+                              : log.details
+                                ? JSON.stringify(log.details, null, 2)
+                                : "-"}
+                          </pre>
                         </td>
                       </tr>
                     ))}

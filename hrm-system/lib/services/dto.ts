@@ -1,3 +1,5 @@
+import { EmployeeStatus } from "@/models";
+
 export interface CreateEmployeeDto {
   email: string;
   phone: string;
@@ -13,6 +15,7 @@ export interface CreateEmployeeDto {
   hireDate: Date;
   address: string;
   iban: string;
+  status?: EmployeeStatus;
 }
 
 export interface CreateDepartmentDto {
