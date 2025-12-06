@@ -1,25 +1,33 @@
 "use client";
 
-import Image from "next/image";
+import CircleImage from "@/lib/components/CircleImage";
 import { FiExternalLink } from "react-icons/fi";
 import { useRouter } from "next/navigation";
+import { EmployeeMicroProfile } from "@/app/types/employee-micro-profile";
 
-export default function MicroProfile() {
+interface MicroProfileProps {
+  profile: EmployeeMicroProfile | null;
+}
+
+export default function MicroProfile({ profile }: MicroProfileProps) {
   const router = useRouter();
+
+  if (!profile) {
+    return null;
+  }
+
   return (
     <div className="bg-white rounded-xl p-4 mt-4 mx-1 overflow-visibl shadow-md">
-      <div className="w-[100px] h-[100px] rounded-full overflow-hidden -mt-8 mx-auto border-2 border-white">
-        <Image
-          src="/noimage.jpg"
+      <div className="-mt-8 mx-auto border-2 border-white w-fit rounded-full">
+        <CircleImage
+          src={profile.picture || "/noimage.jpg"}
           alt="profile-picture"
-          width={100}
-          height={100}
-          className="w-full h-full object-cover "
+          size={100}
         />
       </div>
       <div className="text-center mt-3">
-        <h3 className="text-lg font-bold">John Doe</h3>
-        <p className="text-xs text-gray-500">john.doe@example.com</p>
+        <h3 className="text-lg font-bold">{profile.fullname}</h3>
+        <p className="text-xs text-gray-500">{profile.position}</p>
       </div>
       <button
         onClick={() => router.push("/profile")}

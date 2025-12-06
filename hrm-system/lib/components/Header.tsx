@@ -1,10 +1,15 @@
 "use client";
 
-import Image from "next/image";
+import CircleImage from "@/lib/components/CircleImage";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Button from "./Button";
 
-export default function Header() {
+interface HeaderProps {
+  picture?: string;
+}
+
+export default function Header({ picture }: HeaderProps) {
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -20,18 +25,12 @@ export default function Header() {
     <header className="flex justify-between">
       <h1 className="text-2xl font-bold py-4">HRM System</h1>
       <div className="flex items-center gap-4">
-        <button className="cursor-pointer" onClick={handleLogout}>
-          Logout
-        </button>
-        <div className="w-[32px] h-[32px] rounded-full overflow-hidden">
-          <Image
-            src="/noimage.jpg"
-            alt="profile-picture"
-            width={32}
-            height={32}
-            className="w-full h-full object-cover"
-          />
-        </div>
+        <Button onClick={handleLogout}>Logout</Button>
+        <CircleImage
+          src={picture || "/noimage.jpg"}
+          alt="profile-picture"
+          size={32}
+        />
       </div>
     </header>
   );

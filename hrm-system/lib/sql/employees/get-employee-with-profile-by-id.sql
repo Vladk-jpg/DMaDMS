@@ -3,15 +3,22 @@ SELECT
   e.email,
   e.phone,
   e.status,
-  ep.first_name || ' ' || ep.second_name || ' ' || ep.middle_name AS fullName,
+  ep.first_name || ' ' || ep.second_name || COALESCE(' ' || ep.middle_name, '') AS fullName,
+  ep.first_name,
+  ep.second_name,
+  ep.middle_name,
   ep.passport_number AS passportNumber,
   ep.hire_date AS hireDate,
   ep.birth_date AS birthDate,
   ep.address,
   ep.iban,
   d.name as department,
+  e.department_id,
   p.name as position,
-  r.name as role
+  e.position_id,
+  r.name as role,
+  e.user_role_id,
+  ep.picture
 FROM
   employees e
   JOIN employee_profiles ep ON ep.employee_id = e.id

@@ -2,7 +2,8 @@ SELECT
   e.id,
   ep.first_name || ' ' || ep.second_name AS name,
   e.email,
-  r.name AS role
+  r.name AS role,
+  ep.picture
 FROM
   employees e
   JOIN employee_profiles ep ON ep.employee_id = e.id

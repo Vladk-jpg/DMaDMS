@@ -5,10 +5,11 @@ import { CreateProjectDto } from "@/lib/services/dto";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const project = await ProjectService.getProjectById(params.id);
+    const { id } = await params;
+    const project = await ProjectService.getProjectById(id);
 
     if (!project) {
       return NextResponse.json(
@@ -31,9 +32,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const dto: Partial<CreateProjectDto> = {
       ...body,
@@ -41,7 +43,7 @@ export async function PATCH(
       end_date: body.end_date ? new Date(body.end_date) : undefined,
     };
 
-    await ProjectService.updateProject(params.id, dto);
+    await ProjectService.updateProject(id, dto);
 
     return NextResponse.json({
       success: true,
@@ -54,10 +56,11 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await ProjectService.deleteProject(params.id);
+    const { id } = await params;
+    await ProjectService.deleteProject(id);
 
     return NextResponse.json({
       success: true,

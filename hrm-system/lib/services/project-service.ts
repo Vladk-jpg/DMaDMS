@@ -1,6 +1,8 @@
-import { Project } from "@/models";
+import { Project, ProjectRole } from "@/models";
 import { sql } from "../sql/sql-runner";
 import { CreateProjectDto } from "./dto";
+import { EmployeeProjects } from "@/app/types/employee-projects";
+import { ProjectEmployee } from "@/app/types/project-employee";
 
 export class ProjectService {
   static async getProjects(
@@ -50,5 +52,45 @@ export class ProjectService {
       dto.start_date,
       dto.end_date,
     ]);
+  }
+
+  static async getProjectsByEmployeeId(
+    employeeId: string
+  ): Promise<EmployeeProjects[]> {
+    const result = await sql("projects/get-projects-by-employee-id", [
+      employeeId,
+    ]);
+    return result.rows as EmployeeProjects[];
+  }
+
+  static async getProjectEmployees(
+    projectId: string
+  ): Promise<ProjectEmployee[]> {
+    const result = await sql("projects/get-project-employees", [projectId]);
+    return result.rows as ProjectEmployee[];
+  }
+
+  static async addEmployeeToProject(
+    projectId: string,
+    employeeId: string,
+    roleId: string
+  ): Promise<void> {
+    await sql("projects/add-employee-to-project", [
+      employeeId,
+      projectId,
+      roleId,
+    ]);
+  }
+
+  static async removeEmployeeFromProject(
+    projectId: string,
+    employeeId: string
+  ): Promise<void> {
+    await sql("projects/remove-employee-from-project", [employeeId, projectId]);
+  }
+
+  static async getProjectRoles(): Promise<ProjectRole[]> {
+    const result = await sql("project-roles/get-project-roles", []);
+    return result.rows as ProjectRole[];
   }
 }

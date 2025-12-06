@@ -10,13 +10,15 @@ import {
   FiCalendar,
   FiFolder,
   FiLayers,
+  FiDollarSign
 } from "react-icons/fi";
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   const menuItems = [
-    { href: "/organisation", label: "Organization", icon: FiBriefcase },
+    { href: "/organization", label: "Organization", icon: FiBriefcase },
+    { href: "/salaries", label: "Salaries", icon: FiDollarSign },
     { href: "/employees", label: "Personal", icon: FiUser },
     { href: "/departments", label: "Departments", icon: FiLayers },
     { href: "/timesheet", label: "Timesheets", icon: FiClock },

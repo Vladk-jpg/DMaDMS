@@ -1,24 +1,36 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Button from "@/lib/components/Button";
+import CircleImage from "@/lib/components/CircleImage";
+import Dropdown, { DropdownItem } from "@/lib/components/Dropdown";
+import Link from "next/link";
 
 interface Employee {
-  id: number;
+  id: string;
+  name: string;
   email: string;
-  created_at: string | null;
+  role: string;
+  picture: string;
 }
 
 interface ApiResponse {
   success: boolean;
   data?: Employee[];
   count?: number;
+  total?: number;
   error?: string;
 }
 
 export default function EmployeesPage() {
+  const router = useRouter();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     async function fetchEmployees() {
@@ -26,7 +38,9 @@ export default function EmployeesPage() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch("/api/employees");
+        const response = await fetch(
+          `/api/employees?page=${currentPage}&limit=${itemsPerPage}`
+        );
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -44,6 +58,7 @@ export default function EmployeesPage() {
         }
 
         setEmployees(data.data || []);
+        setTotalPages(Math.ceil((data.total || 0) / itemsPerPage));
       } catch (err: unknown) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to fetch employees";
@@ -55,7 +70,66 @@ export default function EmployeesPage() {
     }
 
     fetchEmployees();
-  }, []);
+  }, [currentPage]);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
+    }
+  };
+
+  const handlePageClick = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push(-1);
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push(-1);
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push(-2);
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
+  };
+
+  const handleEditEmployee = (id: string) => {
+    router.push(`/hr/employees/${id}`);
+  };
+
+  const handleReviewEmployee = (id: string) => {
+    router.push(`/manager/review/${id}`);
+  };
 
   return (
     <div className="container mx-auto p-8">
@@ -78,49 +152,115 @@ export default function EmployeesPage() {
           {employees.length === 0 ? (
             <p className="text-gray-600">No employees found.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white border border-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created At
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {employees.map((employee) => (
-                    <tr key={employee.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {employee.email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {employee.created_at
-                          ? new Date(employee.created_at).toLocaleString(
-                              "ru-RU",
-                              {
-                                year: "numeric",
-                                month: "2-digit",
-                                day: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )
-                          : "N/A"}
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="min-w-full bg-white border border-gray-200 rounded-xl">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Photo
+                      </th>
+                      <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Role
+                      </th>
+                      <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {employees.map((employee) => (
+                      <tr key={employee.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <CircleImage
+                            src={employee.picture || "/noimage.jpg"}
+                            alt={employee.name}
+                            size={48}
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <Link
+                            href={`/employees/${employee.id}`}
+                            className="text-blue-600 hover:text-blue-800 hover:underline"
+                          >
+                            {employee.name}
+                          </Link>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {employee.role}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {employee.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 relative">
+                          <div className="flex justify-center">
+                            <Dropdown
+                              trigger={
+                                <button className="text-gray-500 hover:text-gray-700 text-xl cursor-pointer">
+                                  ⋯
+                                </button>
+                              }
+                            >
+                              <DropdownItem
+                                onClick={() => handleEditEmployee(employee.id)}
+                              >
+                                Edit
+                              </DropdownItem>
+                              <DropdownItem
+                                onClick={() => handleReviewEmployee(employee.id)}
+                              >
+                                Review
+                              </DropdownItem>
+                            </Dropdown>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2"
+                >
+                  &lt;
+                </Button>
+                {getPageNumbers().map((page, index) =>
+                  page < 0 ? (
+                    <span key={`ellipsis-${index}`} className="px-2 text-gray-500">
+                      ...
+                    </span>
+                  ) : (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "primary" : "outline"}
+                      onClick={() => handlePageClick(page)}
+                      className="px-3 py-2 min-w-10"
+                    >
+                      {page}
+                    </Button>
+                  )
+                )}
+                <Button
+                  variant="outline"
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2"
+                >
+                  &gt;
+                </Button>
+              </div>
+            </>
           )}
         </>
       )}

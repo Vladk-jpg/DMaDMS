@@ -20,7 +20,7 @@ interface ApiResponse {
   error?: string;
 }
 
-export default function OrganisationPage() {
+export default function OrganizationPage() {
   const router = useRouter();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

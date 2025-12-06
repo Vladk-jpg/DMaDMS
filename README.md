@@ -45,7 +45,7 @@
 ### Отчетность и анализ
 
 1. **Журналирование действий пользователя**:
-    - Система должна автоматически записывать все **действия пользователей** (`audit_logs`) в таблицу.
+    - Система должна автоматически записывать все **действия (CREATE, UPDATE, DELETE) пользователей** (`audit_logs`) в таблицу.
     - Журнал должен фиксировать тип действия (`action_type`), пользователя, сущность, с которой было взаимодействие (например, `employees`, `projects`), ее идентификатор и временную метку.
     - **Администратор** может просматривать все журналы для аудита.
     
@@ -92,13 +92,19 @@ GROUP BY ep.first_name, ep.second_name, ep.middle_name;
 
 **Получить список проектов, в которых участвует сотрудник, и его роль в каждом из них**
 ```SQL
-SELECT p.name AS project_name, pr.name AS role
-FROM projects p
-JOIN employee_projects eprj ON eprj.project_id = p.id
-JOIN employees e ON e.id = eprj.employee_id
-JOIN employee_profiles eprf ON e.id = eprf.employee_id
-JOIN project_roles pr ON eprj.role_id = pr.id
-WHERE eprf.first_name = 'Jessika';
+SELECT
+  p.id,
+  p.name,
+  p.description,
+  p.start_date,
+  p.end_date,
+  pr.name as role,
+  ep.assigned_date
+FROM employee_projects ep
+JOIN projects p ON ep.project_id = p.id
+JOIN project_roles pr ON pr.id = ep.role_id
+WHERE ep.employee_id = $1
+ORDER BY p.start_date DESC
 ```
 
 **Вычислить сумму и среднее количество в день отработанных часов за месяц для конкретного сотрудника**

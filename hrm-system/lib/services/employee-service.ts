@@ -4,7 +4,8 @@ import { sql } from "../sql/sql-runner";
 import { CreateEmployeeDto } from "./dto";
 import { query } from "../db";
 import { hashPassword } from "../auth";
-import { Teammates } from "@/app/types/teammates";
+import { EmployeeMicroProfile } from "@/app/types/employee-micro-profile";
+import { Teammate } from "@/app/types/teammate";
 
 export class EmployeeService {
   static async getPartialEmployees(
@@ -124,16 +125,17 @@ export class EmployeeService {
     );
   }
 
-  static async getEmployeesByProjectId(
-    id: string,
-    page: number,
-    limit: number
-  ): Promise<Teammates[]> {
-    const result = await sql("employees/get-employees-by-project-id", [
-      id,
-      limit,
-      (page - 1) * limit,
-    ]);
-    return result.rows as Teammates[];
+  static async updatePicture(id: string, pictureURL: string): Promise<void> {
+    await sql("employees/update-picture", [id, pictureURL]);
+  }
+
+  static async getEmployeeMicroProfile(id: string): Promise<EmployeeMicroProfile> {
+    const result = await sql("employees/get-employee-micro-profile", [id]);
+    return result.rows[0] as EmployeeMicroProfile;
+  }
+
+  static async getTeammates(employeeId: string): Promise<Teammate[]> {
+    const result = await sql("employees/get-teammates", [employeeId]);
+    return result.rows as Teammate[];
   }
 }
