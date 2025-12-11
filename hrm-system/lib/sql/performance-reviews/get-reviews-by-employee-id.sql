@@ -3,7 +3,7 @@ SELECT
   pr.score,
   pr.comments,
   pr.review_date,
-  CONCAT(ep.first_name, ' ', ep.second_name) AS reviewer_name
+  ep.first_name || ' ' || ep.second_name AS reviewer_name
 FROM performance_reviews pr
 LEFT JOIN employees e ON e.id = pr.reviewer_id
 LEFT JOIN employee_profiles ep ON ep.employee_id = e.id
