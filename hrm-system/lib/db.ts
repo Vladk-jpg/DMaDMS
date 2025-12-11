@@ -6,7 +6,7 @@ const pool = new Pool({
   database: process.env.POSTGRES_DATABASE || "postgres",
   user: process.env.POSTGRES_USER || "postgres",
   password: process.env.POSTGRES_PASSWORD || "",
-  max: 20,
+  max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
 });
@@ -27,23 +27,6 @@ export async function query(text: string, params?: unknown[]) {
     console.error("Database query error", error);
     throw error;
   }
-}
-
-export async function getClient() {
-  const client = await pool.connect();
-  //const query = client.query.bind(client);
-  const release = client.release.bind(client);
-
-  const timeout = setTimeout(() => {
-    console.error("A client has been checked out for more than 5 seconds!");
-  }, 5000);
-
-  client.release = () => {
-    clearTimeout(timeout);
-    return release();
-  };
-
-  return client;
 }
 
 export default pool;
